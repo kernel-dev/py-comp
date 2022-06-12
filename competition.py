@@ -452,13 +452,14 @@ class PZWGame:
         import random
         import string
 
-        for i in range(5):
+        i = 0
+        while i != 5:
             letter = random.choice(string.ascii_lowercase)
             if letter in self.letters:
-                i -= 1
                 continue
 
             self.letters.append(letter)
+            i += 1
 
     def run_game(
         self, 
