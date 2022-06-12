@@ -54,6 +54,6 @@ Example: if the program provides the letters `A-E`, the puzzle word can be, “g
          if the player provides the correct answer – they win the game.
 
 Status:
-* [ ] Implemented
-* [ ] User-error proof-ish
+* [x] Implemented
+* [x] User-error proof-ish
 * [ ] Modular??

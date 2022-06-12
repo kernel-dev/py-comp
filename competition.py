@@ -207,6 +207,11 @@ class SNDL:
   ==========================================
 """
 class Questions:
+    """
+    An instance to hold marks for each question.
+
+    There can only be 5 questions; no more, no less.
+    """
     def __init__(
         self,
         first: int = 0,
@@ -348,8 +353,9 @@ class Exam:
 
         # A little work-around.
         if (
-            total == 100 or
-            total == 0
+            total % 10 == 0 or
+            total == 0 or
+            "9" in str(total)
         ):
             inclusive = True
         
@@ -419,6 +425,127 @@ class Exam:
                 mark < mark_range[1]
             )
         )
+
+"""
+  ==========================================
+ |              Puzzle Word game            |
+  ==========================================
+"""
+class PZWGame:
+    """
+    A Puzzle Word game handler.
+
+    Principle of the PZW Game:
+        User is provided a randomly generated set of letters
+        by the program; they must guess a word which contains
+        said letters.
+        After a specific threshold (how many letters they guessed),
+        it determines whether or not the user has won.
+
+    Drawbacks:
+        * No real word validation (words can be non-existent.)
+        * Ambiguity as to whether or not a 100% threshold is an illegal case
+    """
+    def __init__(self):
+        self.letters = []
+
+        import random
+        import string
+
+        for i in range(5):
+            letter = random.choice(string.ascii_lowercase)
+            if letter in self.letters:
+                i -= 1
+                continue
+
+            self.letters.append(letter)
+
+    def run_game(
+        self, 
+        affirm_order: bool = False
+    ) -> None:
+        """
+        Runs the Puzzle Word game.
+
+        Additional info:
+            * `affirm_order` — requires the user to come up with a word
+                               where the sequence of the randomly generated
+                               letters must remain absolute.
+                               Example: 
+                               Letters are: ['a', 'b', 'c', 'd', 'e']
+                               User must come up with a word to respect the sequence.
+                               Valid: [ 'game', 'fame' ]
+                               Invalid: [ 'great', 'each' ]
+        """
+
+        letters = self.letters
+
+        print("The following letters are provided: " + " - ".join(letters) + "\n")
+        answer = input(
+            "Try to guess a word (1-6 letters) which contains the aforementioned letters: "
+        )
+
+        if (
+            len(answer.strip()) < 1 or
+            len(answer.strip()) > 6
+        ):
+            print("ERR! Invalid answer! Word can only contain 1-6 letters. Try again.\n")
+            return self.run_game(letters)
+
+        return self.__validate_answer(answer.strip(), letters, affirm_order)
+
+    def __validate_answer(
+        self, 
+        ans: str, 
+        letters: list[str],
+        affirm_order: bool = False
+    ) -> None:
+        matches = []
+
+        for letter in letters:
+            if letter.lower() in ans.lower():
+                matches.append(letter)
+
+        if not matches:
+            print(f"'{ans}' contains no matching letters!")
+
+            ans = input("Please try to guess again: ")
+            return self.__validate_answer(ans, letters)
+
+        if len(matches) > 1:
+            if affirm_order:
+                indices = [
+                    ans.lower().index(letter.lower())
+                    for letter in matches
+                ]
+
+                for i in range(len(indices)):
+                    if (i + 1) == len(indices):
+                        break
+                        
+                    if indices[i] > indices[i + 1]:
+                        print(
+                            f"'{ans}' does not respect the letter order!\n"
+                            "Example letters: a - b - c - d - e\n"
+                            "Valid outputs: [ game, fame, date ]\n"
+                            "Invalid outputs: [ great, feat ]\n"
+                        )
+
+                        ans = input("Please try to guess again: ")
+                        return self.__validate_answer(ans, letters)
+                    
+            print(
+                f"'{ans}' contains a sufficient amount of letters: {', '.join(matches)}!\n"
+                "Congratulations, you won!"
+            )
+            return
+        else:
+            print(
+                f"'{ans}' does not contain a sufficient amount of letters (ONLY {len(matches)})!\n"
+            )
+
+            ans = input("Please try to guess again: ")
+            return self.__validate_answer(ans, letters)
 
 """
 ///===============================================
@@ -515,5 +642,25 @@ except RuntimeError:
 #   Assigned cases (user input):
 #
 print(
-    Exam().get_marks().grade_paper()
+    Exam().get_marks().grade_paper(),
+    "\n"
 )
+
+"""
+  ==========================================
+ |              Puzzle Word game            |
+  ==========================================
+"""
+#
+#   Assigned cases (user input):
+#
+print("RUNNING PZW GAME...")
+print("Run #1: 'affirm_order' is None.\n")
+pzw_first = PZWGame()
+pzw_first.run_game()
+print("\n")
+
+print("RUNNING PZW GAME AGAIN...")
+print("Run #2: 'affirm_order' is turned on.")
+pzw_second = PZWGame()
+pzw_second.run_game(affirm_order=True)
