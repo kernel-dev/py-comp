@@ -123,6 +123,9 @@ class SNDL:
 
         data = self.filter_int_ambiguous_list(data)
 
+        if len(data) < 2:
+            return None
+
         if ext_method.lower() == "manual":
 
             # Returns a new list - contains all the integers inside
@@ -737,6 +740,13 @@ print(
     "Result:", SNDL().second_largest(["xd", None, SNDL(), SNDL, "test!"]), "\n" +
     "Expected: None\n" +
     "Details: Provided a list with no integers\n"
+)
+print(
+    "Data: [\"xd\", 1, None, SNDL, SNDL()]\n" +
+    "Additional arguments: None\n" +
+    "Result:", SNDL().second_largest(["xd", 1, None, SNDL, SNDL()]), "\n" +
+    "Expected: None\n" +
+    "Details: Provided a list with only a single integer\n"
 )
 
 
