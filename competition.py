@@ -1,6 +1,88 @@
 #!/usr/bin/env python3
+
+# 'annotations' are imported here so that
+# methods within a class can reference the parent class.
+#
+# 'Enum' is imported here to... well, construct an Enum.
 from __future__ import annotations
 from enum import Enum
+
+"""
+  ==========================================
+ |             General Utility              |
+  ==========================================
+"""
+class ANSI_SEQ(Enum):
+    """ An enum storing ANSI escape sequences for this project. """
+
+    RED = "\033[95m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+    END_FMT = "\033[0m"
+
+class Util:
+    """ An abstract class holding all auxiliary, general utility functionality. """
+
+    def __init__(self):
+        raise RuntimeError("[UTIL]: 'Util' class should never be insantiated as it is abstract!")
+
+    def format_text(
+        text: str = "",
+        color: str = "",
+        fmt: str = ""
+    ) -> str:
+        """
+        Formats the given text, with the given colour and/or format.
+
+        Viable values for 'color':
+            * red
+            * green
+            * yellow
+
+        Viable values for 'fmt':
+            * bold
+            * underline
+            * bold+underline
+
+        Returns an empty string if something went wrong.
+        """
+
+        # If there is no text, or,
+        # if there is no colour and format value,
+        # return the original text/empty string.
+        if (
+            not text or
+            (not color and not fmt)
+        ):
+            return text
+
+        if (
+            color and
+            # Only apply colour patches if
+            # the colour value is valid.
+            (
+                "red" == color.lower() or
+                "green" == color.lower() or
+                "yellow" == color.lower()
+            )
+        ):
+            text = f"{ANSI_SEQ[color.upper()].value}{text}{ANSI_SEQ.END_FMT.value}"
+
+        if fmt:
+            # Only apply formats if they're
+            # valid format values.bin(number)
+            if "bold" in fmt.lower():
+                text = f"{ANSI_SEQ.BOLD.value}{text}"
+            
+            if "underline" in fmt.lower():
+                text = f"{ANSI_SEQ.UNDERLINE.value}{text}"
+
+            # Necessary END_FMT escape seq.
+            text += ANSI_SEQ.END_FMT.value
+        
+        return text
 
 """
   ==========================================
@@ -53,17 +135,26 @@ class SNDL:
             # Here, we first use 'sorted()' to sort
             # the list of integers in ascending order.
             #
-            # Then we use the 'reversed()' method to
+            # We could use the 'reversed()' method to
             # yield an iterator, which corresponds to the
             # ordered list, but this time in reverse order.
             #
             # With that iterator, we can convert it to a pythonic
-            # list by using the `list()` constructor to instantiate it as one. 
-            return list(
-                reversed(
-                    sorted(data)
-                )   
-            )[1]
+            # list by using the `list()` constructor to instantiate it as one.
+            #
+            # However, that shouldn't be necessary since the built-in `sorted()`
+            # method already has a parameter which will sort the 
+            # list in descending order.
+            #
+            # An alternative approach to this would be:
+            #       * data.sort(reverse=True); data[1]
+            #
+            # Benefit over the current method:
+            #   * Not any that I know of.
+            # 
+            # Drawback over the current method:
+            #   * Mutates the original list during runtime.
+            return sorted(data, reverse=True)[1]
 
     def sort_int_list(
         self,
@@ -180,6 +271,7 @@ class SNDL:
 
     def check_int_list(self, target: list) -> None | RuntimeError:
         """ Verifies that a list contains at least a singular integer value. """
+
         if (
             # In Python, empty lists are
             # treated as falsy values.
@@ -212,6 +304,7 @@ class Questions:
 
     There can only be 5 questions; no more, no less.
     """
+
     def __init__(
         self,
         first: int = 0,
@@ -245,9 +338,13 @@ class Questions:
         self.fifth = fifth
 
     def check_condition(self, question: int) -> bool:
+        """ Ensures that the question's marks are in proper bounds. """
+
         return question > 100 or question < 0
 
     def get_marks_list(self) -> list[tuple]:
+        """ Packs the marks into a defined list of tuples. """
+        
         return [
             ("first",   self.first),
             ("second",  self.second),
@@ -266,6 +363,7 @@ class GRADE_RANGE(Enum):
     
     But I feel as if an Enum has the most sense to use here.
     """
+
     GRADE_A = (90, 100)
     GRADE_B = (80, 89)
     GRADE_C = (70, 79)
@@ -273,6 +371,8 @@ class GRADE_RANGE(Enum):
     GRADE_F = (0, 60)
 
 class Exam:
+    """ An instance for grading and validating exam papers. """
+
     def __init__(
         self,
         marks: list[tuple] = []
@@ -305,13 +405,21 @@ class Exam:
         ]
 
     def get_marks(self, question_index: int = 0) -> Exam:
+        """ Interactively obtains marks for each question from the user. """
+
         if question_index > 4:
             return self
 
         amount = input(f"Marks for question #{question_index + 1}: ")
 
         if not self.__validate_mark_range(int(amount)):
-            print("ERR: Invalid amount! Mark are only between 0-100 (both valeus inclusive); try again!")
+            print(
+                Util.format_text(
+                    "ERR: Invalid amount! Mark are only between 0-100 (both valeus inclusive); try again!",
+                    "red",
+                    "underline"
+                )
+            )
             return self.get_marks(question_index)
 
         self.marks.append(
@@ -336,6 +444,7 @@ class Exam:
                           Will always target higher grade this way.
                           Set to 'False' by default.
         """
+        from math import ceil
 
         if self.marks:
             # Use class's assigned marks
@@ -348,7 +457,11 @@ class Exam:
             return None
 
         # Rounds in favour of a higher mark, if such be a case.
-        total = round(sum([x[1] for x in marks]) / len(marks))
+        #
+        #   89.2 -> 90
+        #   89.6 -> 90
+        #   89.1 -> 90
+        total = ceil(sum([x[1] for x in marks]) / len(marks))
         grade = ""
 
         # A little work-around.
@@ -378,6 +491,8 @@ class Exam:
         return grade.replace("GRADE_", "")
 
     def __validate_marks(self, marks: list[tuple]) -> dict:
+        """ Private method to ensure that the marks are properly constructed. """
+
         present = 0
         highest = 0
         lowest = 0
@@ -405,6 +520,7 @@ class Exam:
         }
 
     def __validate_mark_range(self, mark: int) -> bool:
+        """ Checks to see if the marks for a question is in proper bounds. """
         return mark <= 100 and mark >= 0
     
     def __grade_condition(
@@ -413,6 +529,7 @@ class Exam:
         mark_range: tuple = (-1, -1),
         inclusive: bool = False
     ) -> bool:
+        """ Validates if the mark falls under the given range. """
         if mark_range == (-1, -1):
             return False
 
@@ -481,7 +598,15 @@ class PZWGame:
 
         letters = self.letters
 
-        print("The following letters are provided: " + " - ".join(letters) + "\n")
+        print(
+            "The following letters are provided: " +
+            Util.format_text(
+                " - ".join(letters),
+                "yellow",
+                "bold"
+            ) +
+            "\n"
+        )
         answer = input(
             "Try to guess a word (1-6 letters) which contains the aforementioned letters: "
         )
@@ -490,7 +615,13 @@ class PZWGame:
             len(answer.strip()) < 1 or
             len(answer.strip()) > 6
         ):
-            print("ERR! Invalid answer! Word can only contain 1-6 letters. Try again.\n")
+            print(
+                Util.format_text(
+                    "ERR! Invalid answer! Word can only contain 1-6 letters. Try again.\n",
+                    "red",
+                    "underline"
+                )
+            )
             return self.run_game(letters)
 
         return self.__validate_answer(answer.strip(), letters, affirm_order)
@@ -501,6 +632,7 @@ class PZWGame:
         letters: list[str],
         affirm_order: bool = False
     ) -> None:
+        """ Ensures that the answer provided by the user is valid; if not, prompt them again. """
         matches = []
 
         for letter in letters:
@@ -508,7 +640,13 @@ class PZWGame:
                 matches.append(letter)
 
         if not matches:
-            print(f"'{ans}' contains no matching letters!")
+            print(
+                Util.format_text(
+                    f"'{ans}' contains no matching letters!",
+                    "red",
+                    "bold+underline"
+                )
+            )
 
             ans = input("Please try to guess again: ")
             return self.__validate_answer(ans, letters)
@@ -526,23 +664,35 @@ class PZWGame:
                         
                     if indices[i] > indices[i + 1]:
                         print(
-                            f"'{ans}' does not respect the letter order!\n"
-                            "Example letters: a - b - c - d - e\n"
-                            "Valid outputs: [ game, fame, date ]\n"
-                            "Invalid outputs: [ great, feat ]\n"
+                            Util.format_text(
+                                f"'{ans}' does not respect the letter order!\n",
+                                "red",
+                                "bold+underline"
+                            ) +
+                            f"Example letters: {Util.format_text('a - b - c - d - e', 'yellow')}\n"
+                            f"Valid outputs: {Util.format_text('[ game, fame, date ]', 'yellow')}\n"
+                            f"Invalid outputs: {Util.format_text('[ great, feat ]', 'yellow')}\n"
                         )
 
                         ans = input("Please try to guess again: ")
                         return self.__validate_answer(ans, letters)
                     
             print(
-                f"'{ans}' contains a sufficient amount of letters: {', '.join(matches)}!\n"
-                "Congratulations, you won!"
+                f"'{ans}' contains a sufficient amount of letters: {', '.join(matches)}!\n" +
+                Util.format_text(
+                    "Congratulations, you won!", 
+                    "green", 
+                    "bold+underline"
+                )
             )
             return
         else:
             print(
-                f"'{ans}' does not contain a sufficient amount of letters (ONLY {len(matches)})!\n"
+                Util.format_text(
+                    f"'{ans}' does not contain a sufficient amount of letters (ONLY {len(matches)})!\n",
+                    "red",
+                    "underline"
+                )
             )
 
             ans = input("Please try to guess again: ")
